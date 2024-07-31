@@ -3,6 +3,7 @@ package main
 import (
 	"URLShortener/view"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -15,21 +16,27 @@ func main() {
 
 	mapHandler := view.MapHandeler(pathsToUrl, mux)
 
+	yaml := `
+- path: /urlshort
+  url: https://github.com/gophercises/urlshort
+- path: /urlshort-final
+  url: https://github.com/gophercises/urlshort/tree/solution
+`
+	yamlHandler, err := view.YAMLHandler(yaml, mapHandler)
+	if err != nil {
+		log.Fatalf("yaml error: %v", err)
+	}
+
 	fmt.Println("Starting the server on :8080")
-	http.ListenAndServe(":8080", mapHandler)
+	http.ListenAndServe(":8080", yamlHandler)
 }
 
 func defaultMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", hello)
-	mux.HandleFunc("/hello", anotherHello)
 	return mux
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
-}
-
-func anotherHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello All")
 }
