@@ -1,0 +1,10 @@
+[
+	{
+		"path": "/json-docs",
+		"url": "https://pkg.go.dev/encoding/json"
+	},
+	{
+		"path": "/accaunt",
+		"url": "https://github.com/fancurson"
+	}
+]

@@ -9,35 +9,42 @@ import (
 	"os"
 )
 
+const DEFAULFILE = "resources/textYAML.yaml"
+
 func main() {
 
-	yamlFile := flag.String("YamlFile", "resources/textYaml.yaml", "File with yaml data")
+	// flags
+	customFile := flag.String("fileName", DEFAULFILE, "File with YAML data")
 	flag.Parse()
 
-	//////
-	file, err := os.Open(*yamlFile)
-	if err != nil {
-		log.Fatalf("Open file error: %v", err)
-	}
-	defer file.Close()
-
-	//////
+	// Default handler(fallback)
 	mux := defaultMux()
-
 	pathsToUrl := map[string]string{
 		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
 		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
 	}
 	mapHandler := view.MapHandler(pathsToUrl, mux)
 
-	//////
-	yamlHandler, err := view.YAMLHandler(*file, mapHandler)
-	if err != nil {
-		log.Fatalf("yaml error: %v", err)
-	}
+	//Work with all types of files(yaml, json, yml)
+	fileHandler := WorkWithFile(*customFile, mapHandler)
 
 	fmt.Println("Starting the server on :8080")
-	http.ListenAndServe(":8080", yamlHandler)
+	http.ListenAndServe(":8080", fileHandler)
+}
+
+func WorkWithFile(fileName string, fallback http.HandlerFunc) http.HandlerFunc {
+
+	customFile, err := os.Open(fileName)
+	if err != nil {
+		log.Fatalf("Open file error: %v", err)
+	}
+	defer customFile.Close()
+
+	FileHandler, err := view.FileHandler(*customFile, fallback)
+	if err != nil {
+		log.Fatalf("Work with files error:", err)
+	}
+	return FileHandler
 }
 
 func defaultMux() *http.ServeMux {

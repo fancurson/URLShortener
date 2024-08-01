@@ -1,12 +1,27 @@
 package view
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v2"
 )
+
+func makingMap(pathsToUrls []PathUrl) map[string]string {
+	pathUrlMap := make(map[string]string)
+	for _, d := range pathsToUrls {
+		pathUrlMap[d.Path] = d.Url
+	}
+	return pathUrlMap
+}
+
+type PathUrl struct {
+	Path string `yaml:"path"`
+	Url  string `yaml:"url"`
+}
 
 func MapHandler(pathsToUrl map[string]string, fallback http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -19,8 +34,9 @@ func MapHandler(pathsToUrl map[string]string, fallback http.Handler) http.Handle
 	}
 }
 
-func YAMLHandler(file os.File, fallback http.Handler) (http.HandlerFunc, error) {
-	pathsToUrls, err := DeserializingYaml(file)
+func FileHandler(file os.File, fallback http.Handler) (http.HandlerFunc, error) {
+	ext := filepath.Ext(file.Name())
+	pathsToUrls, err := FileDeserializing(file, ext)
 	if err != nil {
 		return nil, err
 	}
@@ -28,25 +44,18 @@ func YAMLHandler(file os.File, fallback http.Handler) (http.HandlerFunc, error) 
 	return MapHandler(pathUrlMap, fallback), nil
 }
 
-type PathUrl struct {
-	Path string `yaml:"path"`
-	Url  string `yaml:"url"`
-}
-
-func DeserializingYaml(yamlFile os.File) ([]PathUrl, error) {
-	var pathsToUrls []PathUrl
-	decoder := yaml.NewDecoder(&yamlFile)
-	err := decoder.Decode(&pathsToUrls)
-	if err != nil {
-		return nil, fmt.Errorf("Decode yamlFile error(invalid data): %v", err)
+func FileDeserializing(file os.File, ext string) ([]PathUrl, error) {
+	var PathsUrls []PathUrl
+	if ext == ".yaml" || ext == ".yml" {
+		decoder := yaml.NewDecoder(&file)
+		if err := decoder.Decode(&PathsUrls); err != nil {
+			return nil, fmt.Errorf("Decode yamlFile error(invalid data): %v", err)
+		}
+	} else if ext == ".json" {
+		decoder := json.NewDecoder(&file)
+		if err := decoder.Decode(&PathsUrls); err != nil {
+			return nil, fmt.Errorf("Decode jsonFile error(invalid data): %v", err)
+		}
 	}
-	return pathsToUrls, nil
-}
-
-func makingMap(pathsToUrls []PathUrl) map[string]string {
-	pathUrlMap := make(map[string]string)
-	for _, d := range pathsToUrls {
-		pathUrlMap[d.Path] = d.Url
-	}
-	return pathUrlMap
+	return PathsUrls, nil
 }
