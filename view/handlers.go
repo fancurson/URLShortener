@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -18,9 +19,11 @@ func MapHandler(pathsToUrl map[string]string, fallback http.Handler) http.Handle
 	}
 }
 
-func YAMLHandler(yamlBytes string, fallback http.Handler) (http.HandlerFunc, error) {
-
-	pathsToUrls := mustParsing(DeserializingYaml(yamlBytes))
+func YAMLHandler(file os.File, fallback http.Handler) (http.HandlerFunc, error) {
+	pathsToUrls, err := DeserializingYaml(file)
+	if err != nil {
+		return nil, err
+	}
 	pathUrlMap := makingMap(pathsToUrls)
 	return MapHandler(pathUrlMap, fallback), nil
 }
@@ -30,13 +33,13 @@ type PathUrl struct {
 	Url  string `yaml:"url"`
 }
 
-func DeserializingYaml(yamlString string) ([]PathUrl, error) {
+func DeserializingYaml(yamlFile os.File) ([]PathUrl, error) {
 	var pathsToUrls []PathUrl
-	err := yaml.Unmarshal([]byte(yamlString), &pathsToUrls)
+	decoder := yaml.NewDecoder(&yamlFile)
+	err := decoder.Decode(&pathsToUrls)
 	if err != nil {
-		return nil, fmt.Errorf("yaml parsing error: %v", err)
+		return nil, fmt.Errorf("Decode yamlFile error(invalid data): %v", err)
 	}
-
 	return pathsToUrls, nil
 }
 
@@ -46,11 +49,4 @@ func makingMap(pathsToUrls []PathUrl) map[string]string {
 		pathUrlMap[d.Path] = d.Url
 	}
 	return pathUrlMap
-}
-
-func mustParsing(res []PathUrl, err error) []PathUrl {
-	if err != nil {
-		panic(err)
-	}
-	return res
 }

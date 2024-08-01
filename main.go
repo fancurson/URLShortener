@@ -2,27 +2,36 @@ package main
 
 import (
 	"URLShortener/view"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 func main() {
+
+	yamlFile := flag.String("YamlFile", "resources/textYaml.yaml", "File with yaml data")
+	flag.Parse()
+
+	//////
+	file, err := os.Open(*yamlFile)
+	if err != nil {
+		log.Fatalf("Open file error: %v", err)
+	}
+	defer file.Close()
+
+	//////
 	mux := defaultMux()
+
 	pathsToUrl := map[string]string{
 		"/urlshort-godoc": "https://godoc.org/github.com/gophercises/urlshort",
 		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
 	}
-
 	mapHandler := view.MapHandler(pathsToUrl, mux)
 
-	yaml := `
-- path: /urlshort
-  url: https://github.com/gophercises/urlshort
-- path: /urlshort-final
-  url: https://github.com/gophercises/urlshort/tree/solution
-`
-	yamlHandler, err := view.YAMLHandler(yaml, mapHandler)
+	//////
+	yamlHandler, err := view.YAMLHandler(*file, mapHandler)
 	if err != nil {
 		log.Fatalf("yaml error: %v", err)
 	}
@@ -36,7 +45,6 @@ func defaultMux() *http.ServeMux {
 	mux.HandleFunc("/", hello)
 	return mux
 }
-
 func hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world")
 }
