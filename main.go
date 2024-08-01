@@ -14,7 +14,7 @@ func main() {
 		"/yaml-godoc":     "https://godoc.org/gopkg.in/yaml.v2",
 	}
 
-	mapHandler := view.MapHandeler(pathsToUrl, mux)
+	mapHandler := view.MapHandler(pathsToUrl, mux)
 
 	yaml := `
 - path: /urlshort
